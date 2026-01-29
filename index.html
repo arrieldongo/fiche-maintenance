@@ -1,0 +1,730 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Fiche de Maintenance - Générateur</title>
+
+    <style>
+        :root {
+            --border: #222;
+            --light: #f3f3f3;
+            --muted: #666;
+            --bg: #fafafa;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, system-ui, Arial, sans-serif;
+            margin: 0;
+            color: #111;
+            background: var(--bg);
+        }
+
+        header {
+            padding: 14px 16px;
+            border-bottom: 1px solid #ddd;
+            background: #fff;
+            position: sticky;
+            top: 0;
+            z-index: 20;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        /* Mobile-first layout */
+        .wrap {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            padding: 12px;
+        }
+
+        @media (min-width: 980px) {
+            .wrap {
+                grid-template-columns: 420px 1fr;
+                gap: 16px;
+                padding: 16px;
+            }
+
+            header h1 {
+                font-size: 18px;
+            }
+        }
+
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 14px;
+            background: #fff;
+            overflow: hidden;
+        }
+
+        .card .hd {
+            padding: 12px 14px;
+            background: var(--light);
+            border-bottom: 1px solid #ddd;
+            font-weight: 800;
+        }
+
+        .card .bd {
+            padding: 14px;
+        }
+
+        /* Form */
+        label {
+            display: block;
+            font-size: 12px;
+            color: var(--muted);
+            margin: 10px 0 6px;
+        }
+
+        input[type="text"],
+        input[type="date"],
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 12px;
+            font-size: 16px;
+            /* IMPORTANT: évite le zoom iOS */
+            background: #fff;
+            outline: none;
+        }
+
+        input:focus,
+        textarea:focus {
+            border-color: #888;
+        }
+
+        .row2 {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        @media (min-width: 520px) {
+            .row2 {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        textarea {
+            resize: none;
+            min-height: 120px;
+            line-height: 1.3;
+        }
+
+        .hint {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 6px;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .pill {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            border: 1px solid #ddd;
+            background: #fff;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .ops {
+            display: grid;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .sectionTitle {
+            font-weight: 900;
+            margin-top: 10px;
+            padding-top: 6px;
+            border-top: 1px dashed #ddd;
+        }
+
+        /* Bigger tap targets */
+        .op {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            padding: 12px;
+            border: 1px solid #e5e5e5;
+            border-radius: 14px;
+            background: #fff;
+        }
+
+        .opObs {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            font-size: 16px;
+            background: #fff;
+        }
+
+        .opObsWrap {
+            display: none;
+        }
+
+        .opObsWrap[data-show="true"] {
+            display: block;
+        }
+
+        @media (min-width: 520px) {
+            .op {
+                grid-template-columns: 1fr 190px;
+                align-items: center;
+            }
+        }
+
+        .op .t {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .choices {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-start;
+        }
+
+        .seg {
+            flex: 1;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            font-size: 14px;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        .seg input {
+            display: none;
+        }
+
+        .seg[data-active="true"] {
+            border-color: #111;
+            background: #f7f7f7;
+        }
+
+        .seg .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border: 2px solid #111;
+        }
+
+        .seg[data-active="true"] .dot {
+            background: #111;
+        }
+
+        /* Preview */
+        .previewWrap {
+            overflow: auto;
+            padding: 12px;
+            background: #fafafa;
+        }
+
+        .sheet {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            background: #fff;
+            border: 2px solid #111;
+            padding: 10mm;
+        }
+
+        .topbar {
+            display: grid;
+            grid-template-columns: 60mm 1fr 60mm;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .brand {
+            border: 1px solid #111;
+            padding: 8px;
+            font-weight: 900;
+            font-size: 14px;
+        }
+
+        .title {
+            text-align: center;
+            font-weight: 900;
+            font-size: 16px;
+            border-top: 6px solid #111;
+            padding-top: 6px;
+        }
+
+        .meta {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 10px 0;
+            font-size: 13px;
+        }
+
+        .meta .box {
+            border: 1px solid #111;
+            padding: 8px;
+        }
+
+        .meta b {
+            display: inline-block;
+            min-width: 120px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12.5px;
+        }
+
+        th,
+        td {
+            border: 1px solid #111;
+            padding: 6px;
+            vertical-align: top;
+        }
+
+        th {
+            background: #efefef;
+            text-align: left;
+        }
+
+        .sec {
+            background: #e6e6e6;
+            font-weight: 900;
+        }
+
+        .center {
+            text-align: center;
+        }
+
+        /* IMPORTANT: afficher observations avec retours à la ligne */
+        .obsBlock {
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .sig {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 18px;
+            font-size: 12px;
+        }
+
+        .sig .line {
+            width: 40%;
+            border-top: 1px solid #111;
+            padding-top: 6px;
+        }
+
+        /* A bit nicer on phones */
+        @media (max-width: 420px) {
+            .sheet {
+                transform: scale(0.92);
+                transform-origin: top center;
+            }
+        }
+
+        @media print {
+
+            /* cache tout */
+            body * {
+                visibility: hidden !important;
+            }
+
+            /* montre uniquement la fiche */
+            #sheet,
+            #sheet * {
+                visibility: visible !important;
+            }
+
+            /* place la fiche en haut à gauche pour A4 */
+            #sheet {
+                position: absolute;
+                left: 0;
+                top: 0;
+                margin: 0 !important;
+                border: 0 !important;
+                width: 210mm !important;
+                min-height: 297mm !important;
+                transform: none !important;
+            }
+
+            /* supprime le fond gris et les cards */
+            .previewWrap {
+                padding: 0 !important;
+                background: transparent !important;
+            }
+
+            /* marges A4 */
+            @page {
+                size: A4;
+                margin: 10mm;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Fiche maintenance — saisie mobile, génération sans stockage</h1>
+        <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+            <button id="btnPdf" style="
+    padding:10px 14px; border-radius:12px; border:1px solid #111;
+    background:#111; color:#fff; font-weight:800; cursor:pointer;">
+                Télécharger PDF
+            </button>
+            <span style="font-size:12px; color:#666; align-self:center;">
+                Astuce: sur iPhone → bouton “Partager” → “Enregistrer dans Fichiers”
+            </span>
+        </div>
+
+    </header>
+
+    <div class="wrap">
+        <!-- FORM -->
+        <section class="card">
+            <div class="hd">1) Formulaire (mobile)</div>
+            <div class="bd">
+                <label>Code équipement</label>
+                <input id="codeEquip" type="text" placeholder="ex: 10QUB210 Série : 6 Nr: 101" />
+
+                <div class="row2">
+                    <div>
+                        <label>Localisation</label>
+                        <input id="localisation" type="text" placeholder="ex: UP2" />
+                    </div>
+                    <div>
+                        <label>Date</label>
+                        <input id="date" type="date" />
+                    </div>
+                </div>
+
+                <label>Intervenant</label>
+                <input id="intervenant" type="text" placeholder="ex: YVS" />
+
+                <label>Observations</label>
+                <textarea id="obs"
+                    placeholder="Ex: anomalies constatées, actions faites, pièces changées, tests OK/KO..."></textarea>
+                <div class="hint">
+                    <span class="pill">↵ Retours à la ligne conservés</span>
+                    <span class="pill"><span id="count">0</span>/600</span>
+                </div>
+
+                <div class="hd" style="margin:14px -14px 10px; border-top:1px solid #ddd;">2) Opérations</div>
+                <div class="ops" id="ops"></div>
+            </div>
+        </section>
+
+        <!-- PREVIEW -->
+        <section class="card">
+            <div class="hd">2) Document (rendu)</div>
+            <div class="previewWrap">
+                <div class="sheet" id="sheet">
+                    <div class="topbar">
+                        <div class="brand">IMPERIAL<br />BRANDS</div>
+                        <div class="title">FICHE DE MAINTENANCE SODIQUBE</div>
+                        <div></div>
+                    </div>
+
+                    <div class="meta">
+                        <div class="box"><b>Code équipement :</b> <span data-bind="codeEquip">—</span></div>
+                        <div class="box"><b>Localisation :</b> <span data-bind="localisation">—</span></div>
+                        <div class="box"><b>Intervenant :</b> <span data-bind="intervenant">—</span></div>
+                        <div class="box"><b>Date :</b> <span data-bind="date">—</span></div>
+                    </div>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width:60%">OPERATIONS</th>
+                                <th class="center" style="width:10%">BON</th>
+                                <th class="center" style="width:10%">MV</th>
+                                <th style="width:20%">OBSERVATIONS</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyOps"></tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="4">
+                                    <b>Observations :</b>
+                                    <div class="obsBlock" style="margin-top:6px;" data-bind="obs">—</div>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+
+                    <div class="sig">
+                        <div class="line">Signature Électricien</div>
+                        <div class="line" style="text-align:right;">Signature CSEA</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const OPERATIONS = [
+            { section: "ESSAI & TEST AVANT INTERVENTION" },
+            { label: "Mesure avec cigarettes ou filtres" },
+
+            { section: "STATION" },
+            { label: "Nettoyage général" },
+            { label: "Contrôle de la pression d'air (5 bars)" },
+            { label: "Contrôle des lampes (marche et défaut)" },
+
+            { section: "TRÉMIE" },
+            { label: "Nettoyage trémie/barillet" },
+            { label: "Fonctionnement de la trémie" },
+
+            { section: "PC" },
+            { label: "Reset du compteur cigarettes" },
+            { label: "Purge éventuelle des fichiers devenus inutiles" },
+            { label: "SCANDISK puis DEFRAG" },
+            { label: "Test de l'écran tactile et calibration si nécessaire" },
+
+            { section: "BALANCE" },
+            { label: "Dépoussiérage" },
+            { label: "Contrôle visuel jeu/ frottements /montage/ stabilisation" },
+
+            { section: "TIRAGE/VENTILATION" },
+            { label: "Nettoyage général" },
+            { label: "Remplacement des sphincters et des joints toriques" },
+            { label: "Signal ventil 0% =" },
+            { label: "Signal ventil 100% =" },
+            { label: "Valeur de la réf interne" },
+            { label: "Nettoyage et contrôle de l'aspiration (-0,7 bar)" },
+            { label: "Nettoyage et contrôle des capteurs et connecteurs pneumatiques" },
+            { label: "Nettoyage et contrôle des tuyaux" },
+            { label: "Nettoyage du CFO (orifice à débit critique)" },
+            { label: "Nettoyage de la réf interne" },
+            { label: "Nettoyage des filtres" },
+            { label: "Calibration" },
+            { label: "Test de fuite" },
+
+            { section: "DIAMÈTRE" },
+            { label: "Nettoyage général" },
+            { label: "Tête laser" },
+            { label: "Bague + raccords" },
+            { label: "Nettoyage et contrôle de l'aspiration (-0,7 bar)" },
+            { label: "Essai sur pige + réglage éventuel" },
+            { label: "Contrôle du fonctionnement du moteur" },
+            { label: "Contrôle avec cigarette" },
+            { label: "Niveau d'aspiration et validation" },
+            { label: "Frottements éventuels" },
+        ];
+
+        const opsDiv = document.getElementById("ops");
+        const tbody = document.getElementById("tbodyOps");
+
+        // state per op:
+        // { status: "BON"|"MV"|"" , obs: "" }
+        const state = {};
+
+        const MAX_OBS_GLOBAL = 600;
+        const MAX_OBS_OP = 180;
+
+        function formatDate(iso) {
+            if (!iso) return "—";
+            const [y, m, d] = iso.split("-");
+            return `${d}/${m}/${y.slice(2)}`;
+        }
+
+        function setBind(key, val) {
+            document.querySelectorAll(`[data-bind="${key}"]`).forEach(el => el.textContent = val);
+        }
+
+        function autoGrow(textarea, maxPx = 180) {
+            textarea.style.height = "auto";
+            textarea.style.height = Math.min(textarea.scrollHeight, maxPx) + "px";
+        }
+
+        function renderFormOps() {
+            opsDiv.innerHTML = "";
+            let opIndex = 0;
+
+            OPERATIONS.forEach((item) => {
+                if (item.section) {
+                    const h = document.createElement("div");
+                    h.className = "sectionTitle";
+                    h.textContent = item.section;
+                    opsDiv.appendChild(h);
+                } else {
+                    const idx = opIndex++;
+                    state[idx] = state[idx] || { status: "", obs: "" };
+
+                    const row = document.createElement("div");
+                    row.className = "op";
+
+                    row.innerHTML = `
+          <div class="t">${item.label}</div>
+
+          <div>
+            <div class="choices" role="group" aria-label="Choix Bon / MV">
+              <label class="seg" data-active="${state[idx].status === "BON"}">
+                <input type="radio" name="op-${idx}" value="BON" ${state[idx].status === "BON" ? "checked" : ""}>
+                <span class="dot"></span> Bon
+              </label>
+
+              <label class="seg" data-active="${state[idx].status === "MV"}">
+                <input type="radio" name="op-${idx}" value="MV" ${state[idx].status === "MV" ? "checked" : ""}>
+                <span class="dot"></span> MV
+              </label>
+            </div>
+
+            <div class="opObsWrap" data-show="${state[idx].status === "MV"}" style="margin-top:10px;">
+              <label style="margin:0 0 6px; color:#666; font-size:12px;">Observation (si MV)</label>
+              <textarea
+                class="opObs"
+                id="opObs-${idx}"
+                placeholder="Ex: défaut constaté, action prise, pièce à remplacer..."
+                maxlength="${MAX_OBS_OP}"
+              >${escapeHtml(state[idx].obs || "")}</textarea>
+              <div class="hint" style="margin-top:6px;">
+                <span class="pill">Visible dans la preview</span>
+                <span class="pill"><span id="opCount-${idx}">${(state[idx].obs || "").length}</span>/${MAX_OBS_OP}</span>
+              </div>
+            </div>
+          </div>
+        `;
+
+                    // Buttons (Bon/MV)
+                    row.querySelectorAll(".seg").forEach((seg) => {
+                        const input = seg.querySelector("input");
+                        seg.addEventListener("click", () => {
+                            input.checked = true;
+                            state[idx].status = input.value;
+
+                            // update UI active state
+                            row.querySelectorAll(".seg").forEach(s => s.dataset.active = "false");
+                            seg.dataset.active = "true";
+
+                            // show/hide per-op obs
+                            const wrap = row.querySelector(".opObsWrap");
+                            wrap.dataset.show = (state[idx].status === "MV") ? "true" : "false";
+
+                            // if switching away from MV, keep text but hide it (don’t delete)
+                            renderTableOps();
+                        });
+                    });
+
+                    // Per-op observations textarea
+                    const ta = row.querySelector(`#opObs-${idx}`);
+                    if (ta) {
+                        autoGrow(ta, 200);
+                        ta.addEventListener("input", () => {
+                            state[idx].obs = ta.value;
+                            autoGrow(ta, 200);
+                            const c = row.querySelector(`#opCount-${idx}`);
+                            if (c) c.textContent = ta.value.length;
+                            renderTableOps();
+                        });
+                    }
+
+                    opsDiv.appendChild(row);
+                }
+            });
+
+            renderTableOps();
+        }
+
+        function renderTableOps() {
+            tbody.innerHTML = "";
+            let opIndex = 0;
+
+            OPERATIONS.forEach((item) => {
+                if (item.section) {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `<td class="sec" colspan="4">${item.section}</td>`;
+                    tbody.appendChild(tr);
+                } else {
+                    const idx = opIndex++;
+                    const status = state[idx]?.status || "";
+                    const obs = (state[idx]?.obs || "").trim();
+
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+          <td>${item.label}</td>
+          <td class="center">${status === "BON" ? "X" : ""}</td>
+          <td class="center">${status === "MV" ? "X" : ""}</td>
+          <td class="obsBlock">${status === "MV" && obs ? escapeHtml(obs) : ""}</td>
+        `;
+                    tbody.appendChild(tr);
+                }
+            });
+        }
+
+        function bindInputs() {
+            const codeEquip = document.getElementById("codeEquip");
+            const localisation = document.getElementById("localisation");
+            const intervenant = document.getElementById("intervenant");
+            const date = document.getElementById("date");
+            const obs = document.getElementById("obs");
+            const count = document.getElementById("count");
+
+            const sync = () => {
+                setBind("codeEquip", codeEquip.value.trim() || "—");
+                setBind("localisation", localisation.value.trim() || "—");
+                setBind("intervenant", intervenant.value.trim() || "—");
+                setBind("date", formatDate(date.value));
+            };
+
+            codeEquip.addEventListener("input", sync);
+            localisation.addEventListener("input", sync);
+            intervenant.addEventListener("input", sync);
+            date.addEventListener("input", sync);
+
+            obs.addEventListener("input", () => {
+                if (obs.value.length > MAX_OBS_GLOBAL) obs.value = obs.value.slice(0, MAX_OBS_GLOBAL);
+                count.textContent = obs.value.length;
+                autoGrow(obs, 240);
+                setBind("obs", obs.value.trim() || "—");
+            });
+
+            // init
+            sync();
+            obs.dispatchEvent(new Event("input"));
+        }
+
+        // small helper to safely inject text into HTML
+        function escapeHtml(str) {
+            return String(str)
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll('"', "&quot;")
+                .replaceAll("'", "&#039;");
+        }
+
+        renderFormOps();
+        bindInputs();
+
+        document.getElementById("btnPdf").addEventListener("click", () => {
+            window.print();
+        });
+
+    </script>
+
+</body>
+
+</html>
