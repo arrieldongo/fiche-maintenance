@@ -484,6 +484,30 @@
     </div>
 
     <script>
+
+        /* ===============================
+   PROTECTION D’ACCÈS – USAGE INTERNE
+   =============================== */
+
+        const ACCESS_CODE = "SITAB"; // 🔑 À personnaliser
+        const ACCESS_KEY = "maintenance_access_ok";
+
+        (function protectPage() {
+            if (!sessionStorage.getItem(ACCESS_KEY)) {
+                const code = prompt(
+                    "Accès réservé – Maintenance\n\nVeuillez entrer le code d’accès :"
+                );
+
+                if (code !== ACCESS_CODE) {
+                    alert("Accès refusé.\nContactez le service maintenance.");
+                    document.body.innerHTML = "";
+                    throw new Error("Accès refusé");
+                } else {
+                    sessionStorage.setItem(ACCESS_KEY, "1");
+                }
+            }
+        })();
+
         const OPERATIONS = [
             { section: "ESSAI & TEST AVANT INTERVENTION" },
             { label: "Mesure avec cigarettes ou filtres" },
