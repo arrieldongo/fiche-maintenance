@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isManager() {
+      return isSignedIn() && request.auth.token.role == 'manager';
+    }
+
+    function isTechnician() {
+      return isSignedIn() && request.auth.token.role == 'technician';
+    }
+
+    function hasValidStatus(data) {
+      return data.status in ['planned', 'in_progress', 'completed', 'cancelled'];
+    }
+
+    function hasValidDates(data) {
+      return data.startAt <= data.endAt;
+    }
+
+    match /maintenances/{maintenanceId} {
+      allow create, update, delete: if isManager()
+        && hasValidStatus(request.resource.data)
+        && hasValidDates(request.resource.data);
+
+      allow get, list: if (isManager())
+        || (isTechnician() && resource.data.enabled == true);
+    }
+  }
+}

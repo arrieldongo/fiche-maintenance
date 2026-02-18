@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gestion des maintenances</title>
+  <style>
+    body { font-family: -apple-system, system-ui, Arial, sans-serif; margin: 0; background:#f5f6f8; color:#111; }
+    header { background:#fff; border-bottom:1px solid #ddd; padding:14px 16px; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+    h1 { margin:0; font-size:18px; }
+    nav a { margin-right:10px; color:#0d47a1; text-decoration:none; font-weight:600; }
+    main { max-width:1100px; margin:16px auto; padding:0 12px; display:grid; gap:16px; grid-template-columns:1fr; }
+    @media(min-width:980px){ main{ grid-template-columns:380px 1fr; } }
+    .card { background:#fff; border:1px solid #ddd; border-radius:12px; overflow:hidden; }
+    .hd { background:#f0f2f4; padding:10px 12px; font-weight:700; border-bottom:1px solid #ddd; }
+    .bd { padding:12px; }
+    label { display:block; font-size:13px; margin:10px 0 6px; color:#555; }
+    input, select { width:100%; padding:10px; border:1px solid #bbb; border-radius:10px; font-size:14px; }
+    .row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .check { display:flex; align-items:center; gap:10px; margin-top:12px; }
+    .check input { width:auto; }
+    button { margin-top:14px; width:100%; background:#111; color:#fff; border:none; border-radius:10px; padding:11px; font-weight:700; cursor:pointer; }
+    button:disabled { opacity:.6; cursor:not-allowed; }
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th, td { border-bottom:1px solid #eee; text-align:left; padding:8px 6px; vertical-align:top; }
+    th { background:#fafafa; font-size:12px; color:#555; }
+    .status { display:inline-block; border:1px solid #ccc; border-radius:999px; padding:2px 8px; font-size:12px; }
+    .badge-off { color:#b00020; }
+    .msg { font-size:13px; margin-top:8px; }
+    .err { color:#b00020; }
+    .ok { color:#1b5e20; }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Gestion des maintenances (Manager)</h1>
+    <nav>
+      <a href="planning.html">Planning</a>
+      <a href="index.html">Fiche index</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="card">
+      <div class="hd">Créer une maintenance</div>
+      <div class="bd">
+        <form id="maintenanceForm">
+          <label for="title">Titre</label>
+          <input id="title" required placeholder="Ex: Changement filtre ventilation" />
+
+          <label for="machine">Machine</label>
+          <input id="machine" required placeholder="Ex: SODIQUBE 10QUB210" />
+
+          <div class="row">
+            <div>
+              <label for="startAt">Date début</label>
+              <input id="startAt" type="datetime-local" required />
+            </div>
+            <div>
+              <label for="endAt">Date fin</label>
+              <input id="endAt" type="datetime-local" required />
+            </div>
+          </div>
+
+          <label for="status">Statut</label>
+          <select id="status" required>
+            <option value="planned">Planifiée</option>
+            <option value="in_progress">En cours</option>
+            <option value="completed">Terminée</option>
+            <option value="cancelled">Annulée</option>
+          </select>
+
+          <label class="check"><input id="enabled" type="checkbox" checked /> Activée</label>
+
+          <button id="submitBtn" type="submit">Créer l'action</button>
+          <div id="formMessage" class="msg"></div>
+        </form>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="hd">Maintenances enregistrées</div>
+      <div class="bd">
+        <table>
+          <thead>
+            <tr>
+              <th>Titre</th>
+              <th>Machine</th>
+              <th>Début</th>
+              <th>Fin</th>
+              <th>Statut</th>
+              <th>Active</th>
+            </tr>
+          </thead>
+          <tbody id="maintenanceRows">
+            <tr><td colspan="6">Chargement...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="firebase-maintenance.js"></script>
+  <script>
+    const form = document.getElementById('maintenanceForm');
+    const formMessage = document.getElementById('formMessage');
+    const submitBtn = document.getElementById('submitBtn');
+    const rows = document.getElementById('maintenanceRows');
+
+    let db;
+    try {
+      db = window.MaintenanceFirebase.init().db;
+    } catch (error) {
+      formMessage.textContent = error.message;
+      formMessage.className = 'msg err';
+      submitBtn.disabled = true;
+      rows.innerHTML = '<tr><td colspan="6">Firebase non configuré.</td></tr>';
+    }
+
+    function renderMaintenances(items) {
+      if (!items.length) {
+        rows.innerHTML = '<tr><td colspan="6">Aucune maintenance.</td></tr>';
+        return;
+      }
+
+      rows.innerHTML = items.map((item) => `
+        <tr>
+          <td>${item.title}</td>
+          <td>${item.machine}</td>
+          <td>${window.MaintenanceFirebase.formatTimestamp(item.startAt)}</td>
+          <td>${window.MaintenanceFirebase.formatTimestamp(item.endAt)}</td>
+          <td><span class="status">${item.status}</span></td>
+          <td class="${item.enabled ? '' : 'badge-off'}">${item.enabled ? 'Oui' : 'Non'}</td>
+        </tr>
+      `).join('');
+    }
+
+    if (db) {
+      db.collection('maintenances')
+        .orderBy('startAt', 'desc')
+        .onSnapshot((snapshot) => {
+          const items = snapshot.docs.map(window.MaintenanceFirebase.extractMaintenance);
+          renderMaintenances(items);
+        }, (error) => {
+          rows.innerHTML = `<tr><td colspan="6">Erreur lecture: ${error.message}</td></tr>`;
+        });
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!db) return;
+
+      const startAt = window.MaintenanceFirebase.toTimestampFromLocalDateTime(document.getElementById('startAt').value);
+      const endAt = window.MaintenanceFirebase.toTimestampFromLocalDateTime(document.getElementById('endAt').value);
+
+      if (!startAt || !endAt) {
+        formMessage.textContent = 'Dates invalides.';
+        formMessage.className = 'msg err';
+        return;
+      }
+
+      if (startAt.toMillis() > endAt.toMillis()) {
+        formMessage.textContent = 'La date de début doit être antérieure ou égale à la date de fin.';
+        formMessage.className = 'msg err';
+        return;
+      }
+
+      const payload = {
+        title: document.getElementById('title').value.trim(),
+        machine: document.getElementById('machine').value.trim(),
+        startAt,
+        endAt,
+        enabled: document.getElementById('enabled').checked,
+        status: document.getElementById('status').value,
+        createdByUid: 'manager-demo',
+        createdByName: 'Manager Demo',
+        createdAt: window.MaintenanceFirebase.serverTimestamp(),
+        updatedAt: window.MaintenanceFirebase.serverTimestamp()
+      };
+
+      submitBtn.disabled = true;
+      formMessage.textContent = 'Création en cours...';
+      formMessage.className = 'msg';
+
+      try {
+        await db.collection('maintenances').add(payload);
+        form.reset();
+        document.getElementById('enabled').checked = true;
+        document.getElementById('status').value = 'planned';
+        formMessage.textContent = 'Maintenance créée avec succès.';
+        formMessage.className = 'msg ok';
+      } catch (error) {
+        formMessage.textContent = `Erreur création: ${error.message}`;
+        formMessage.className = 'msg err';
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+
+</html>

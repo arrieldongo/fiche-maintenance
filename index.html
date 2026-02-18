@@ -452,6 +452,11 @@
 <body>
     <header>
         <h1>Fiche maintenance — saisie mobile, génération sans stockage</h1>
+        <div style="margin-top:8px; display:flex; gap:12px; flex-wrap:wrap; font-size:13px;">
+            <a href="gestion.html">Gestion</a>
+            <a href="planning.html">Planning</a>
+            <span id="maintenanceContext" style="color:#444; font-weight:600;"></span>
+        </div>
 
         <div class="topActions">
             <button id="btnPdf" class="btn btnPrimary">Télécharger PDF</button>
@@ -553,6 +558,10 @@
         </section>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="firebase-maintenance.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <script>
@@ -924,10 +933,48 @@
             return data;
         }
 
+        async function loadMaintenanceContext() {
+            const params = new URLSearchParams(window.location.search);
+            const maintenanceId = params.get("maintenanceId");
+            if (!maintenanceId) return;
+
+            const contextEl = document.getElementById("maintenanceContext");
+            if (contextEl) {
+                contextEl.textContent = `Maintenance: ${maintenanceId}`;
+            }
+
+            try {
+                if (!window.MaintenanceFirebase) return;
+                const { db } = window.MaintenanceFirebase.init();
+                const doc = await db.collection("maintenances").doc(maintenanceId).get();
+                if (!doc.exists) return;
+                const m = window.MaintenanceFirebase.extractMaintenance(doc);
+
+                const codeEquipInput = document.getElementById("codeEquip");
+                const localisationInput = document.getElementById("localisation");
+                const dateInput = document.getElementById("date");
+                const obsInput = document.getElementById("obs");
+
+                if (codeEquipInput && m.machine) codeEquipInput.value = m.machine;
+                if (localisationInput && m.title) localisationInput.value = m.title;
+                if (dateInput && m.startAt?.toDate) {
+                    dateInput.value = m.startAt.toDate().toISOString().slice(0, 10);
+                }
+                if (obsInput && m.status) {
+                    const statusLine = `Maintenance ${m.status}`;
+                    obsInput.value = obsInput.value ? `${obsInput.value}
+${statusLine}` : statusLine;
+                }
+            } catch (err) {
+                console.warn("Chargement maintenance impossible:", err);
+            }
+        }
+
         /* ===============================
            INIT + EVENTS
            =============================== */
 
+        loadMaintenanceContext();
         renderFormOps();
         bindInputs();
 
