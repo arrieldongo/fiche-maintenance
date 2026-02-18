@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Planning des maintenances</title>
+  <style>
+    body { font-family: -apple-system, system-ui, Arial, sans-serif; margin:0; background:#f5f6f8; color:#111; }
+    header { background:#fff; border-bottom:1px solid #ddd; padding:14px 16px; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+    h1 { margin:0; font-size:18px; }
+    nav a { margin-right:10px; color:#0d47a1; text-decoration:none; font-weight:600; }
+    main { max-width:900px; margin:16px auto; padding:0 12px; }
+    .legend { font-size:13px; color:#555; margin-bottom:12px; }
+    .list { display:grid; gap:10px; }
+    .item { background:#fff; border:1px solid #ddd; border-radius:12px; padding:12px; cursor:pointer; }
+    .item:hover { border-color:#333; }
+    .top { display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+    .title { font-weight:700; }
+    .meta { font-size:13px; color:#444; margin-top:6px; }
+    .status { display:inline-block; margin-top:8px; border:1px solid #bbb; border-radius:999px; padding:2px 8px; font-size:12px; }
+    .empty { background:#fff; border:1px dashed #bbb; padding:16px; border-radius:12px; }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Planning maintenances (Technicien)</h1>
+    <nav>
+      <a href="gestion.html">Gestion</a>
+      <a href="index.html">Fiche index</a>
+    </nav>
+  </header>
+
+  <main>
+    <p class="legend">Affiche uniquement les maintenances activées. Cliquez sur une maintenance pour ouvrir la fiche.</p>
+    <section id="planningList" class="list">
+      <div class="empty">Chargement...</div>
+    </section>
+  </main>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="firebase-maintenance.js"></script>
+  <script>
+    const planningList = document.getElementById('planningList');
+    let db;
+
+    try {
+      db = window.MaintenanceFirebase.init().db;
+    } catch (error) {
+      planningList.innerHTML = `<div class="empty">${error.message}</div>`;
+    }
+
+    function render(items) {
+      if (!items.length) {
+        planningList.innerHTML = '<div class="empty">Aucune maintenance active pour le moment.</div>';
+        return;
+      }
+
+      planningList.innerHTML = items.map((item) => `
+        <article class="item" data-id="${item.id}">
+          <div class="top">
+            <div class="title">${item.title}</div>
+            <div>${window.MaintenanceFirebase.formatTimestamp(item.startAt)}</div>
+          </div>
+          <div class="meta">Machine: ${item.machine}</div>
+          <div class="meta">Fin: ${window.MaintenanceFirebase.formatTimestamp(item.endAt)}</div>
+          <span class="status">${item.status}</span>
+        </article>
+      `).join('');
+
+      for (const article of planningList.querySelectorAll('.item')) {
+        article.addEventListener('click', () => {
+          const id = article.dataset.id;
+          window.location.href = `index.html?maintenanceId=${encodeURIComponent(id)}`;
+        });
+      }
+    }
+
+    if (db) {
+      db.collection('maintenances')
+        .where('enabled', '==', true)
+        .orderBy('startAt', 'asc')
+        .onSnapshot((snapshot) => {
+          const items = snapshot.docs.map(window.MaintenanceFirebase.extractMaintenance);
+          render(items);
+        }, (error) => {
+          planningList.innerHTML = `<div class="empty">Erreur lecture: ${error.message}</div>`;
+        });
+    }
+  </script>
+</body>
+
+</html>
